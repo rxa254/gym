@@ -1,24 +1,28 @@
+from __future__ import division
 import gym
 from gym import spaces
 from gym.utils import seeding
 import numpy as np
 from os import path
+pi = np.pi
 
 class PendulumEnv(gym.Env):
     metadata = {
         'render.modes' : ['human', 'rgb_array'],
-        'video.frames_per_second' : 30
+        'video.frames_per_second' : 5
     }
 
     def __init__(self):
-        self.max_speed=8
-        self.max_torque=2.
-        self.dt=.05
+        self.max_speed  = 8       # units ? (should be SI)
+        self.max_torque = 10
+        self.dt         = 0.05
         self.viewer = None
 
         high = np.array([1., 1., self.max_speed])
-        self.action_space = spaces.Box(low=-self.max_torque, high=self.max_torque, shape=(1,))
-        self.observation_space = spaces.Box(low=-high, high=high)
+        self.action_space = spaces.Box(low  = -self.max_torque,
+                                       high =  self.max_torque,
+                                      shape = (1,))
+        self.observation_space = spaces.Box(low = -high, high = high)
 
         self._seed()
 
@@ -26,21 +30,30 @@ class PendulumEnv(gym.Env):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
 
-    def _step(self,u):
+    def _step(self, u):
         th, thdot = self.state # th := theta
-
-        g = 10.
-        m = 1.
-        l = 1.
+        
+        g  = 9.81       # gravity ?
+        m  = 1.0        # mass ?
+        L  = 1.0        # pendulum length ?
         dt = self.dt
 
-        u = np.clip(u, -self.max_torque, self.max_torque)[0]
+        u           = np.clip(u, -self.max_torque, self.max_torque)
         self.last_u = u # for rendering
-        costs = angle_normalize(th)**2 + .1*thdot**2 + .001*(u**2)
+        # this is the cost function (x + v + F)
+        costs       = (angle_normalize(th)**2 +
+                           0.1*thdot**2 +
+                           0.001*(u**2))
 
-        newthdot = thdot + (-3*g/(2*l) * np.sin(th + np.pi) + 3./(m*l**2)*u) * dt
-        newth = th + newthdot*dt
-        newthdot = np.clip(newthdot, -self.max_speed, self.max_speed) #pylint: disable=E1111
+        # v = v + a*dt
+        newthdot  = thdot
+        thddot    = -3*g/(2*L) * np.sin(th + np.pi)
+        thddot   +=  3/(m*L**2) * u
+        newthdot += thddot * dt
+        
+        newth    = th + (newthdot * dt)
+        #pylint: disable=E1111
+        newthdot = np.clip(newthdot, -self.max_speed, self.max_speed) 
 
         self.state = np.array([newth, newthdot])
         return self._get_obs(), -costs, False, {}
@@ -64,15 +77,15 @@ class PendulumEnv(gym.Env):
 
         if self.viewer is None:
             from gym.envs.classic_control import rendering
-            self.viewer = rendering.Viewer(500,500)
-            self.viewer.set_bounds(-2.2,2.2,-2.2,2.2)
+            self.viewer = rendering.Viewer(400, 400)
+            self.viewer.set_bounds(-1.6, 1.6, -1.6, 1.6)
             rod = rendering.make_capsule(1, .2)
-            rod.set_color(.8, .3, .3)
+            rod.set_color(0.58, 0.3, 0.73)
             self.pole_transform = rendering.Transform()
             rod.add_attr(self.pole_transform)
             self.viewer.add_geom(rod)
-            axle = rendering.make_circle(.05)
-            axle.set_color(0,0,0)
+            axle = rendering.make_circle(0.05)
+            axle.set_color(0.5, 0.95, 0.5)
             self.viewer.add_geom(axle)
             fname = path.join(path.dirname(__file__), "assets/clockwise.png")
             self.img = rendering.Image(fname, 1., 1.)
@@ -86,5 +99,7 @@ class PendulumEnv(gym.Env):
 
         return self.viewer.render(return_rgb_array = mode=='rgb_array')
 
+# this keeps us from going to crazy angles;
+# it wraps back to zero at +/- 2*pi
 def angle_normalize(x):
-    return (((x+np.pi) % (2*np.pi)) - np.pi)
+    return (((x + np.pi) % (2*np.pi)) - np.pi)
