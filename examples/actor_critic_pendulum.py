@@ -203,18 +203,24 @@ def main():
         actor_critic.train()
 
         cur_state = new_state
+        update_strip(cur_state)
 
 def signal_handler(signal, frame):
-        print(' ')
-        print('You pressed Ctrl-C')
-        sys.exit(0)
+    print(' ')
+    print('You pressed Ctrl-C')
+    sys.exit(0)
 
 def print_state(cur_state, action, reward):
-        mytheta = 180/np.pi*np.arctan2(cur_state[0][1], cur_state[0][0])
-        str1 = 'Angle = {: 4.1f} deg'.format(mytheta)
-        str2 = 'Torque = {: 3.1f} N'.format(action[0][0])
-        str3 = 'Reward = {: 4.1f}'.format(reward[0][0])
-        print(str1 + ' ' + str2 + ' ' +  str3)
-        
+    mytheta = 180/np.pi*np.arctan2(cur_state[0][1], cur_state[0][0])
+    str1 = 'Angle = {: 4.1f} deg'.format(mytheta)
+    str2 = 'Torque = {: 3.1f} N'.format(action[0][0])
+    str3 = 'Reward = {: 4.1f}'.format(reward[0][0])
+    print(str1 + ' ' + str2 + ' ' +  str3)
+
+def update_strip(cur_state):
+     print(' ')
+
+
+# - - - - --- -------- - - - - -- - - --- --- -- --- -- - - - - - --- -- 
 if __name__ == "__main__":
     main()
