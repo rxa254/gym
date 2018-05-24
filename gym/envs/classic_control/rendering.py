@@ -27,7 +27,7 @@ except ImportError as e:
 import math
 import numpy as np
 
-RAD2DEG = 57.29577951308232
+RAD2DEG = 180 / np.pi
 
 def get_display(spec):
     """Convert a display specification (such as :0) into an actual Display
@@ -48,7 +48,9 @@ class Viewer(object):
 
         self.width = width
         self.height = height
-        self.window = pyglet.window.Window(width=width, height=height, display=display)
+        self.window = pyglet.window.Window(width=width,
+                                               height=height,
+                                               display=display)
         self.window.on_close = self.window_closed_by_user
         self.geoms = []
         self.onetime_geoms = []
@@ -230,8 +232,8 @@ class FilledPolygon(Geom):
 def make_circle(radius=10, res=30, filled=True):
     points = []
     for i in range(res):
-        ang = 2*math.pi*i / res
-        points.append((math.cos(ang)*radius, math.sin(ang)*radius))
+        ang = 2*np.pi*i / res
+        points.append((np.cos(ang)*radius, np.sin(ang)*radius))
     if filled:
         return FilledPolygon(points)
     else:

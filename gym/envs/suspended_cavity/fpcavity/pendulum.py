@@ -78,7 +78,8 @@ class PendulumEnv(gym.Env):
         if self.viewer is None:
             from gym.envs.classic_control import rendering
             self.viewer = rendering.Viewer(400, 400)
-            self.viewer.set_bounds(-1.6, 1.6, -1.6, 1.6)
+            vb = 3
+            self.viewer.set_bounds(-vb, vb, -vb, vb)
             rod = rendering.make_capsule(1, .2)
             rod.set_color(0.58, 0.3, 0.73)
             self.pole_transform = rendering.Transform()
