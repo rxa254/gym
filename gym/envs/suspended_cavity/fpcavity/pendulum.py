@@ -20,9 +20,10 @@ class PendulumEnv(gym.Env):
         self.viewer = None
 
         high = np.array([1., 1., self.max_speed])
-        self.action_space = spaces.Box(low  = -self.max_torque,
-                                       high =  self.max_torque,
-                                      shape = (1,), dtype=dt)
+        #self.action_space = spaces.Box(low  = -self.max_torque,
+        #                               high =  self.max_torque,
+        #                              shape = (1,), dtype=dt)
+        self.action_space      = spaces.Discrete(2)
         self.observation_space = spaces.Box(low = -high, high = high, dtype=dt)
 
         self._seed()
@@ -31,7 +32,7 @@ class PendulumEnv(gym.Env):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
 
-    def step(self, u):
+    def _step(self, u):
         th, thdot = self.state # th := theta
         
         g  = 9.81       # gravity ?
@@ -59,8 +60,8 @@ class PendulumEnv(gym.Env):
         self.state = np.array([newth, newthdot])
         return self._get_obs(), -costs, False, {}
 
-    def reset(self):
-        high = np.array([np.pi, 1])
+    def _reset(self):
+        high = np.array([np.pi, 0.1])
         self.state = self.np_random.uniform(low=-high, high=high)
         self.last_u = None
         return self._get_obs()
@@ -78,17 +79,20 @@ class PendulumEnv(gym.Env):
 
         if self.viewer is None:
             from gym.envs.classic_control import rendering
-            self.viewer = rendering.Viewer(400, 400)
+            self.viewer = rendering.Viewer(600, 600)
             vb = 3
             self.viewer.set_bounds(-vb, vb, -vb, vb)
+
             rod = rendering.make_capsule(1, .2)
             rod.set_color(0.58, 0.3, 0.73)
             self.pole_transform = rendering.Transform()
             rod.add_attr(self.pole_transform)
             self.viewer.add_geom(rod)
+
             axle = rendering.make_circle(0.05)
             axle.set_color(0.5, 0.95, 0.5)
             self.viewer.add_geom(axle)
+
             fname = path.join(path.dirname(__file__), "assets/clockwise.png")
             self.img = rendering.Image(fname, 1., 1.)
             self.imgtrans = rendering.Transform()
