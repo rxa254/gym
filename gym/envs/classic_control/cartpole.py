@@ -17,7 +17,7 @@ class CartPoleEnv(gym.Env):
     }
 
     def __init__(self):
-        self.gravity = 9.8
+        self.gravity = 9.81
         self.masscart = 1.0
         self.masspole = 0.1
         self.total_mass = (self.masspole + self.masscart)
@@ -27,7 +27,7 @@ class CartPoleEnv(gym.Env):
         self.tau = 0.02  # seconds between state updates
 
         # Angle at which to fail the episode
-        self.theta_threshold_radians = 12 * 2 * math.pi / 360
+        self.theta_threshold_radians = 12 * 2 * np.pi / 360
         self.x_threshold = 2.4
 
         # Angle limit set to 2 * theta_threshold_radians so failing observation is still within bounds
@@ -55,8 +55,8 @@ class CartPoleEnv(gym.Env):
         state = self.state
         x, x_dot, theta, theta_dot = state
         force = self.force_mag if action==1 else -self.force_mag
-        costheta = math.cos(theta)
-        sintheta = math.sin(theta)
+        costheta = np.cos(theta)
+        sintheta = np.sin(theta)
         temp = (force + self.polemass_length * theta_dot * theta_dot * sintheta) / self.total_mass
         thetaacc = (self.gravity * sintheta - costheta* temp) / (self.length * (4.0/3.0 - self.masspole * costheta * costheta / self.total_mass))
         xacc  = temp - self.polemass_length * thetaacc * costheta / self.total_mass
@@ -68,7 +68,7 @@ class CartPoleEnv(gym.Env):
         done =  x < -self.x_threshold \
                 or x > self.x_threshold \
                 or theta < -self.theta_threshold_radians \
-                or theta > self.theta_threshold_radians
+                or theta >  self.theta_threshold_radians
         done = bool(done)
 
         if not done:
@@ -86,21 +86,26 @@ class CartPoleEnv(gym.Env):
         return np.array(self.state), reward, done, {}
 
     def reset(self):
-        self.state = self.np_random.uniform(low=-0.05, high=0.05, size=(4,))
+        x0 = np.random.uniform(-1,1, size=(4,))
+        x        = 0.15
+        xdot     = 0.15
+        theta    = 1
+        thetadot = 1
+        self.state = x0 * [x, xdot, theta, thetadot] 
         self.steps_beyond_done = None
         return np.array(self.state)
 
     def render(self, mode='human'):
-        screen_width = 600
+        screen_width  = 600
         screen_height = 400
 
         world_width = self.x_threshold*2
-        scale = screen_width/world_width
-        carty = 100 # TOP OF CART
-        polewidth = 10.0
-        polelen = scale * 1.0
-        cartwidth = 50.0
-        cartheight = 30.0
+        scale       = screen_width/world_width
+        carty       = 100 # TOP OF CART
+        polewidth   = 10.0
+        polelen     = scale * 1.0
+        cartwidth   = 50.0
+        cartheight  = 30.0
 
         if self.viewer is None:
             from gym.envs.classic_control import rendering
@@ -113,7 +118,7 @@ class CartPoleEnv(gym.Env):
             self.viewer.add_geom(cart)
             l,r,t,b = -polewidth/2,polewidth/2,polelen-polewidth/2,-polewidth/2
             pole = rendering.FilledPolygon([(l,b), (l,t), (r,t), (r,b)])
-            pole.set_color(.8,.6,.4)
+            pole.set_color(0.48, 0.16, 0.84)
             self.poletrans = rendering.Transform(translation=(0, axleoffset))
             pole.add_attr(self.poletrans)
             pole.add_attr(self.carttrans)
@@ -121,10 +126,10 @@ class CartPoleEnv(gym.Env):
             self.axle = rendering.make_circle(polewidth/2)
             self.axle.add_attr(self.poletrans)
             self.axle.add_attr(self.carttrans)
-            self.axle.set_color(.5,.5,.8)
+            self.axle.set_color(0.5, 0.5, 0.8)
             self.viewer.add_geom(self.axle)
             self.track = rendering.Line((0,carty), (screen_width,carty))
-            self.track.set_color(0,0,0)
+            self.track.set_color(0, 0, 0)
             self.viewer.add_geom(self.track)
 
         if self.state is None: return None
