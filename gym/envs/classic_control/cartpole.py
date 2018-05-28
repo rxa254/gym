@@ -2,6 +2,8 @@
 Classic cart-pole system implemented by Rich Sutton et al.
 Copied from http://incompleteideas.net/sutton/book/code/pole.c
 permalink: https://perma.cc/C9ZM-652R
+
+modified by RXA254, May 2018
 """
 
 import math
@@ -27,7 +29,8 @@ class CartPoleEnv(gym.Env):
         self.tau = 0.02  # seconds between state updates
 
         # Angle at which to fail the episode
-        self.theta_threshold_radians = 12 * 2 * np.pi / 360
+        self.theta_threshold_degrees = 44
+        self.theta_threshold_radians = self.theta_threshold_degrees * (np.pi / 180)
         self.x_threshold = 2.4
 
         # Angle limit set to 2 * theta_threshold_radians so failing observation is still within bounds
@@ -51,22 +54,32 @@ class CartPoleEnv(gym.Env):
         return [seed]
 
     def step(self, action):
-        assert self.action_space.contains(action), "%r (%s) invalid"%(action, type(action))
+        assert self.action_space.contains(action), "%r (%s) invalid"%(action,
+                                                                    type(action))
         state = self.state
         x, x_dot, theta, theta_dot = state
         force = self.force_mag if action==1 else -self.force_mag
         costheta = np.cos(theta)
         sintheta = np.sin(theta)
-        temp = (force + self.polemass_length * theta_dot * theta_dot * sintheta) / self.total_mass
-        thetaacc = (self.gravity * sintheta - costheta* temp) / (self.length * (4.0/3.0 - self.masspole * costheta * costheta / self.total_mass))
+        temp = (force + self.polemass_length * theta_dot *
+                    theta_dot * sintheta) / self.total_mass
+            
+        thetaacc = (self.gravity * sintheta - costheta* temp) / (self.length *
+            (4.0/3.0 - self.masspole * costheta * costheta / self.total_mass))
+
         xacc  = temp - self.polemass_length * thetaacc * costheta / self.total_mass
-        x  = x + self.tau * x_dot
-        x_dot = x_dot + self.tau * xacc
-        theta = theta + self.tau * theta_dot
+
+        # Evolve the system using Euler's Inaccurate Method
+        x         = x         + self.tau * x_dot
+        x_dot     = x_dot     + self.tau * xacc
+        theta     = theta     + self.tau * theta_dot
         theta_dot = theta_dot + self.tau * thetaacc
-        self.state = (x,x_dot,theta,theta_dot)
-        done =  x < -self.x_threshold \
-                or x > self.x_threshold \
+
+        # Update the State Space vector
+        self.state = (x, x_dot, theta, theta_dot)
+
+        done =         x < -self.x_threshold \
+                or     x >  self.x_threshold \
                 or theta < -self.theta_threshold_radians \
                 or theta >  self.theta_threshold_radians
         done = bool(done)
@@ -87,17 +100,17 @@ class CartPoleEnv(gym.Env):
 
     def reset(self):
         x0 = np.random.uniform(-1,1, size=(4,))
-        x        = 0.15
-        xdot     = 0.15
-        theta    = 1
-        thetadot = 1
+        x        = 0.15   # meters ?
+        xdot     = 0.15   # ms/s   ?
+        theta    = 0.5    # radians
+        thetadot = 0.1    # radians/s
         self.state = x0 * [x, xdot, theta, thetadot] 
         self.steps_beyond_done = None
         return np.array(self.state)
 
     def render(self, mode='human'):
-        screen_width  = 600
-        screen_height = 400
+        screen_width  = 800
+        screen_height = 600
 
         world_width = self.x_threshold*2
         scale       = screen_width/world_width
@@ -110,24 +123,30 @@ class CartPoleEnv(gym.Env):
         if self.viewer is None:
             from gym.envs.classic_control import rendering
             self.viewer = rendering.Viewer(screen_width, screen_height)
-            l,r,t,b = -cartwidth/2, cartwidth/2, cartheight/2, -cartheight/2
-            axleoffset =cartheight/4.0
+
+            # cart graphics
+            l,r,t,b    = -cartwidth/2, cartwidth/2, cartheight/2, -cartheight/2
+            axleoffset = cartheight/4
             cart = rendering.FilledPolygon([(l,b), (l,t), (r,t), (r,b)])
             self.carttrans = rendering.Transform()
             cart.add_attr(self.carttrans)
             self.viewer.add_geom(cart)
+
+            # pole graphics
             l,r,t,b = -polewidth/2,polewidth/2,polelen-polewidth/2,-polewidth/2
-            pole = rendering.FilledPolygon([(l,b), (l,t), (r,t), (r,b)])
+            pole    = rendering.FilledPolygon([(l,b), (l,t), (r,t), (r,b)])
             pole.set_color(0.48, 0.16, 0.84)
             self.poletrans = rendering.Transform(translation=(0, axleoffset))
             pole.add_attr(self.poletrans)
             pole.add_attr(self.carttrans)
             self.viewer.add_geom(pole)
+            
             self.axle = rendering.make_circle(polewidth/2)
             self.axle.add_attr(self.poletrans)
             self.axle.add_attr(self.carttrans)
             self.axle.set_color(0.5, 0.5, 0.8)
             self.viewer.add_geom(self.axle)
+
             self.track = rendering.Line((0,carty), (screen_width,carty))
             self.track.set_color(0, 0, 0)
             self.viewer.add_geom(self.track)
