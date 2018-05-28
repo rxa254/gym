@@ -1,4 +1,4 @@
-from __future__ import division
+
 import gym
 from gym import spaces
 from gym.utils import seeding
@@ -9,20 +9,21 @@ pi = np.pi
 class PendulumEnv(gym.Env):
     metadata = {
         'render.modes' : ['human', 'rgb_array'],
-        'video.frames_per_second' : 5
+        'video.frames_per_second' : 15
     }
 
     def __init__(self):
-        self.max_speed  = 8       # units ? (should be SI)
-        self.max_torque = 10
+        dt = np.dtype(np.float32)
+        self.max_speed  = 8.0       # units ? (should be SI)
+        self.max_torque = 10.0
         self.dt         = 0.05
         self.viewer = None
 
         high = np.array([1., 1., self.max_speed])
         self.action_space = spaces.Box(low  = -self.max_torque,
                                        high =  self.max_torque,
-                                      shape = (1,))
-        self.observation_space = spaces.Box(low = -high, high = high)
+                                      shape = (1,), dtype=dt)
+        self.observation_space = spaces.Box(low = -high, high = high, dtype=dt)
 
         self._seed()
 
@@ -30,7 +31,7 @@ class PendulumEnv(gym.Env):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
 
-    def _step(self, u):
+    def step(self, u):
         th, thdot = self.state # th := theta
         
         g  = 9.81       # gravity ?
@@ -58,7 +59,7 @@ class PendulumEnv(gym.Env):
         self.state = np.array([newth, newthdot])
         return self._get_obs(), -costs, False, {}
 
-    def _reset(self):
+    def reset(self):
         high = np.array([np.pi, 1])
         self.state = self.np_random.uniform(low=-high, high=high)
         self.last_u = None
