@@ -23,7 +23,7 @@ class PendulumEnv(gym.Env):
         self.action_space = spaces.Box(low  = -self.max_torque,
                                        high =  self.max_torque,
                                       shape = (1,), dtype=dt)
-        self.action_space.n = 1
+        self.action_space.n = 2**12
         #self.action_space      = spaces.Discrete(2)
         self.observation_space = spaces.Box(low = -high, high = high, dtype=dt)
 
@@ -41,7 +41,10 @@ class PendulumEnv(gym.Env):
         L  = 1.0        # pendulum length ?
         dt = self.dt
 
+        # Take discrete force outputs and make it bipolar and scaled
+        u  = self.max_torque * (u - self.action_space.n / 2) / self.action_space.n
         u           = np.clip(u, -self.max_torque, self.max_torque)
+
         #print(u)
         self.last_u = u # for rendering
         # this is the cost function (x + v + F)
@@ -70,7 +73,7 @@ class PendulumEnv(gym.Env):
 
     def _get_obs(self):
         theta, thetadot = self.state
-        u = self.last_u
+        #u = self.last_u
         theta = angle_normalize(theta)
         return np.array([np.cos(theta), np.sin(theta), thetadot])
         #return np.array([theta, thetadot, u])
@@ -106,7 +109,8 @@ class PendulumEnv(gym.Env):
         self.viewer.add_onetime(self.img)
         self.pole_transform.set_rotation(self.state[0] + np.pi/2)
         if self.last_u:
-            self.imgtrans.scale = (np.abs(self.last_u/2), np.abs(self.last_u)/2)
+            print(self.last_u)
+            self.imgtrans.scale = (-self.last_u/2, np.abs(self.last_u)/2)
 
         return self.viewer.render(return_rgb_array = mode=='rgb_array')
 
