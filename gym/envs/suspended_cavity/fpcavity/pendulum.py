@@ -68,7 +68,9 @@ class PendulumEnv(gym.Env):
 
     def _get_obs(self):
         theta, thetadot = self.state
-        return np.array([np.cos(theta), np.sin(theta), thetadot])
+        u = self.last_u
+        #return np.array([np.cos(theta), np.sin(theta), thetadot, u])
+        return np.array([theta, thetadot, u])
 
     def _render(self, mode='human', close=False):
         if close:
@@ -84,7 +86,7 @@ class PendulumEnv(gym.Env):
             self.viewer.set_bounds(-vb, vb, -vb, vb)
 
             rod = rendering.make_capsule(1, .2)
-            rod.set_color(0.58, 0.3, 0.73)
+            rod.set_color(0.78, 0.53, 0.13)
             self.pole_transform = rendering.Transform()
             rod.add_attr(self.pole_transform)
             self.viewer.add_geom(rod)
