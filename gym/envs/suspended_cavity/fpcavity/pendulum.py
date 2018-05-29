@@ -4,7 +4,7 @@ from gym import spaces
 from gym.utils import seeding
 import numpy as np
 from os import path
-pi = np.pi
+
 
 class PendulumEnv(gym.Env):
     metadata = {
@@ -20,10 +20,11 @@ class PendulumEnv(gym.Env):
         self.viewer = None
 
         high = np.array([1., 1., self.max_speed])
-        #self.action_space = spaces.Box(low  = -self.max_torque,
-        #                               high =  self.max_torque,
-        #                              shape = (1,), dtype=dt)
-        self.action_space      = spaces.Discrete(2)
+        self.action_space = spaces.Box(low  = -self.max_torque,
+                                       high =  self.max_torque,
+                                      shape = (1,), dtype=dt)
+        self.action_space.n = 1
+        #self.action_space      = spaces.Discrete(2)
         self.observation_space = spaces.Box(low = -high, high = high, dtype=dt)
 
         self._seed()
@@ -41,6 +42,7 @@ class PendulumEnv(gym.Env):
         dt = self.dt
 
         u           = np.clip(u, -self.max_torque, self.max_torque)
+        #print(u)
         self.last_u = u # for rendering
         # this is the cost function (x + v + F)
         costs       = (angle_normalize(th)**2 +
@@ -69,8 +71,9 @@ class PendulumEnv(gym.Env):
     def _get_obs(self):
         theta, thetadot = self.state
         u = self.last_u
-        #return np.array([np.cos(theta), np.sin(theta), thetadot, u])
-        return np.array([theta, thetadot, u])
+        theta = angle_normalize(theta)
+        return np.array([np.cos(theta), np.sin(theta), thetadot])
+        #return np.array([theta, thetadot, u])
 
     def _render(self, mode='human', close=False):
         if close:
@@ -81,18 +84,18 @@ class PendulumEnv(gym.Env):
 
         if self.viewer is None:
             from gym.envs.classic_control import rendering
-            self.viewer = rendering.Viewer(600, 600)
+            self.viewer = rendering.Viewer(400, 400)
             vb = 3
             self.viewer.set_bounds(-vb, vb, -vb, vb)
 
-            rod = rendering.make_capsule(1, .2)
-            rod.set_color(0.78, 0.53, 0.13)
+            rod = rendering.make_capsule(2, .2)
+            rod.set_color(0.58, 0.33, 0.13)
             self.pole_transform = rendering.Transform()
             rod.add_attr(self.pole_transform)
             self.viewer.add_geom(rod)
 
             axle = rendering.make_circle(0.05)
-            axle.set_color(0.5, 0.95, 0.5)
+            axle.set_color(0.75, 0.75, 0.95)
             self.viewer.add_geom(axle)
 
             fname = path.join(path.dirname(__file__), "assets/clockwise.png")
@@ -103,7 +106,7 @@ class PendulumEnv(gym.Env):
         self.viewer.add_onetime(self.img)
         self.pole_transform.set_rotation(self.state[0] + np.pi/2)
         if self.last_u:
-            self.imgtrans.scale = (-self.last_u/2, np.abs(self.last_u)/2)
+            self.imgtrans.scale = (np.abs(self.last_u/2), np.abs(self.last_u)/2)
 
         return self.viewer.render(return_rgb_array = mode=='rgb_array')
 
