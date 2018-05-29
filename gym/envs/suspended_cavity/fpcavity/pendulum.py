@@ -45,7 +45,7 @@ class PendulumEnv(gym.Env):
         # this is the cost function (x + v + F)
         costs       = (angle_normalize(th)**2 +
                            0.1*thdot**2 +
-                           0.001*(u**2))
+                           0.0001*(u**2))
 
         # v = v + a*dt
         newthdot  = thdot
